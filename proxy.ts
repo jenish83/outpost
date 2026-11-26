@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/workspace(.*)',
+  '/workspaces(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req)=>{
@@ -15,6 +16,9 @@ export default clerkMiddleware(async (auth, req)=>{
     }
 
     return NextResponse.next();
+}, {
+    // Serve Clerk JS from this app when the browser cannot reach clerk.accounts.dev.
+    frontendApiProxy: { enabled: true },
 });
 
 export const config = {

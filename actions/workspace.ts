@@ -9,6 +9,7 @@ import { scopeWhere } from "@/lib/workspace-scope";
 import { db } from "@/lib/prisma";
 import { getEntitlements, getWorkspaceOwnerId } from "@/lib/billing";
 import { FREE_WORKSPACE_LIMIT, type LimitError } from "@/lib/plan-limits";
+import { canvasContent, docContent, type CanvasNote } from "@/lib/workspace-document";
 import type { Models } from "@/src/prisma/contract.d";
 
 type WorkspaceStatus = Models.public_Workspace["status"];
@@ -138,4 +139,16 @@ export async function setWorkspaceSharing(
 
   revalidatePath(`/workspace/${workspaceId}`);
   return { shareToken: updated.shareToken };
+}
+
+export async function saveDoc(workspaceId: string, text: string) {
+  if (!(await canAccessWorkspace(workspaceId))) throw new Error("Workspace not found");
+  const updated = await db.orm.public.Doc.where({ workspaceId }).update({ content: docContent(text) });
+  if (!updated) throw new Error("Document not found");
+}
+
+export async function saveCanvas(workspaceId: string, notes: CanvasNote[]) {
+  if (!(await canAccessWorkspace(workspaceId))) throw new Error("Workspace not found");
+  const updated = await db.orm.public.Canvas.where({ workspaceId }).update({ content: canvasContent(notes) });
+  if (!updated) throw new Error("Canvas not found");
 }

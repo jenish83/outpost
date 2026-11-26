@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Bricolage_Grotesque } from "next/font/google";
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <ClerkProvider
+    proxyUrl="/__clerk"
     appearance={{
       theme: dark,
       variables: {
@@ -45,11 +47,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <TooltipProvider>
-          <UpgradeDialogProvider><AppShell>
-            {children}
-            </AppShell>
-            </UpgradeDialogProvider>
-            </TooltipProvider>
+          <UpgradeDialogProvider>
+            {/* usePathname in AppShell depends on dynamic params, so it has to stream. */}
+            <Suspense fallback={<div className="flex min-h-dvh flex-1 flex-col">{children}</div>}>
+              <AppShell>{children}</AppShell>
+            </Suspense>
+          </UpgradeDialogProvider>
+        </TooltipProvider>
         <Toaster />
         </body>
     </html>

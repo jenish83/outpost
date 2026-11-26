@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { createWorkspace } from "@/actions/workspace";
 import { Button } from "@/components/ui/button";
-// import { MicButton } from "@/components/MicButton";
 import { useUpgradeDialog } from "@/components/UpgradeDialog";
 import { UPGRADE_REASONS } from "@/lib/plan-limits";
 import { useFetch } from "@/hooks/use-fetch";
+import { MicButton } from "@/components/MicButton";
 
 const MAX_NAME_LENGTH = 48;
 
@@ -75,7 +75,7 @@ export function DashboardPrompt() {
         <div className="mt-1 flex items-center justify-between gap-2 pl-2">
           <span className="text-xs text-muted-foreground/70">Shift + Enter for a new line</span>
           <div className="flex items-center gap-1.5">
-            {/* <MicButton value={prompt} onChange={setPrompt} disabled={busy} className="rounded-full" /> */}
+            <MicButton value={prompt} onChange={setPrompt} disabled={busy} className="rounded-full" />
             <Button
               size="icon"
               onClick={handleSubmit}

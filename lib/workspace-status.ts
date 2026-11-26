@@ -1,59 +1,44 @@
+import { formatDistanceToNow, max } from "date-fns";
 import type { Models } from "@/src/prisma/contract.d";
 
 export type WorkspaceStatus = Models.public_Workspace["status"];
 
-const STATUS_TITLES: Record<WorkspaceStatus, string> = {
-  PLANNING: "Planning",
-  IN_PROGRESS: "In progress",
-  IN_REVIEW: "In review",
-  DONE: "Done",
-};
-
-export function statusTitle(status: WorkspaceStatus) {
-  return STATUS_TITLES[status];
-}
-
-const RELATIVE_UNITS: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
-  { unit: "year", seconds: 60 * 60 * 24 * 365 },
-  { unit: "month", seconds: 60 * 60 * 24 * 30 },
-  { unit: "week", seconds: 60 * 60 * 24 * 7 },
-  { unit: "day", seconds: 60 * 60 * 24 },
-  { unit: "hour", seconds: 60 * 60 },
-  { unit: "minute", seconds: 60 },
-  { unit: "second", seconds: 1 },
+// Board columns, in order. Shared by the kanban board and the recent workspace cards.
+export const WORKSPACE_STATUSES: { status: WorkspaceStatus; title: string }[] = [
+  { status: "PLANNING", title: "Planning" },
+  { status: "IN_PROGRESS", title: "In progress" },
+  { status: "IN_REVIEW", title: "In review" },
+  { status: "DONE", title: "Done" },
 ];
 
-export function formatLastActivity(date: Date, now = Date.now()) {
-  const deltaSeconds = Math.round((date.getTime() - now) / 1000);
-  const abs = Math.abs(deltaSeconds);
-  const match = RELATIVE_UNITS.find((unit) => abs >= unit.seconds) ?? RELATIVE_UNITS.at(-1)!;
-  const value = Math.round(deltaSeconds / match.seconds);
-  return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(value, match.unit);
+export function statusTitle(status: WorkspaceStatus) {
+  return WORKSPACE_STATUSES.find((column) => column.status === status)?.title ?? status;
 }
 
+export function formatLastActivity(date: Date) {
+  return formatDistanceToNow(date, { addSuffix: true });
+}
+
+type Dated = { updatedAt: Date } | null;
+
 type ActivitySource = {
-  id: string;
-  name: string;
-  description: string | null;
-  status: WorkspaceStatus;
   updatedAt: Date;
+  doc: Dated;
+  canvas: Dated;
   creator: { name: string | null; imageUrl: string | null } | null;
-  doc: { updatedAt: Date } | null;
-  canvas: { updatedAt: Date } | null;
 };
 
-// Last edit across the workspace, its doc, and its canvas — the card footer sorts on this.
-export function withLastActivity(workspace: ActivitySource) {
-  const lastActivity = [workspace.updatedAt, workspace.doc?.updatedAt, workspace.canvas?.updatedAt].reduce<Date>(
-    (latest, stamp) => (stamp && stamp > latest ? stamp : latest),
+// A workspace's own updatedAt only changes on rename or move, so real activity also counts
+// edits to its doc and canvas.
+export function withLastActivity<T extends ActivitySource>(workspace: T) {
+  const lastActivity = max([
     workspace.updatedAt,
-  );
+    workspace.doc?.updatedAt ?? new Date(0),
+    workspace.canvas?.updatedAt ?? new Date(0),
+  ]);
   return {
-    id: workspace.id,
-    name: workspace.name,
-    description: workspace.description,
-    status: workspace.status,
-    lastActivity,
+    ...workspace,
     creator: workspace.creator ?? { name: null, imageUrl: null },
+    lastActivity,
   };
 }
